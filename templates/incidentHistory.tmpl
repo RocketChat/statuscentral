@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <base href="/">
+    <title>Incident History &bullet; {{ .owner }}</title>
+    <link rel="icon" type="image/png" href="static/img/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/app.css?v={{ .cacheBreaker }}" />
+    <link rel="stylesheet" href="static/css/font-awesome.min.css">
+
+    <style>
+        .header {
+            background-color: {{ .backgroundColor }};
+        }
+    </style>
+
+</head>
+<body>
+    <div class="header"></div>
+    <div class="page">
+        <div class="spacer">
+            <div class="flex row">
+                <img class="logo" src="{{ .logo }}" />
+            </div>
+
+            <div class="info-header">
+                {{ if eq .mostCriticalStatus 0 }}
+                    <div class="notification success">
+                        <h1>All Systems Nominal</h1>
+                    </div>
+                {{ else if eq .mostCriticalStatus 1 }}
+                    <div class="notification info">
+                        <h1>Performance Issues on some services</h1>
+                    </div>
+                {{ else if eq .mostCriticalStatus 2 }}
+                    <div class="notification warning">
+                        <h1>Partial Outage on some services</h1>
+                    </div>
+                {{ else if eq .mostCriticalStatus 3 }}
+                    <div class="notification critical">
+                        <h1>Major Outage on some services</h1>
+                    </div>
+                {{ else if eq .mostCriticalStatus 4 }}
+                    <div class="notification info">
+                        <h1>Schedule maintenance on some services</h1>
+                    </div>
+                {{ else if eq .mostCriticalStatus 5 }}
+                    <div class="notification info">
+                        <h1>Failed to load the status for the services</h1>
+                    </div>
+                {{ end }}
+            </div>
+
+            <div class="main-content">
+                <div class="incidents">
+                    <div class="line">
+                        <h2>Incident History</h2>
+                    </div>
+                    {{ if .incidents }}
+                        {{ range $index, $aggregatedIncident := .incidents }}
+                            <div class="line">
+                                <div class="flex row">
+                                    <span class="date">{{ $aggregatedIncident.Time.Format "Jan 02, 2006" }}</span>
+                                    <div class="line">
+                                        {{ range $incident := $aggregatedIncident.Incidents }}
+                                            <div class="content">
+                                                <h3><a href="/incidents/{{ $incident.ID }}">{{ $incident.Title }}</a></h3>
+
+                                                {{ range $update := $incident.Updates }}
+                                                    <p><b>{{ $update.Time.Format "15:04"}} {{ $update.Status }}</b> - {{$update.Message}}</p>
+                                                {{ end }}
+                                            </div>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                            </div>
+                        {{ end }}
+                    {{ else }}
+                        <div class="line empty">
+                            No incidents found for this period.
+                        </div>
+                    {{ end }}
+
+                    <div class="pagination">
+                        {{ if ne .page 0 }}
+                            <a href="/incidents?page={{ .previousPage }}">&laquo; Previous</a>
+                        {{ else }}
+                            <span class="disabled">&laquo; Previous</span>
+                        {{ end }}
+                            <a href="/incidents?page={{ .nextPage }}">Next &raquo;</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hr"></div>
+
+            <div class="flex row justify-end">
+                <p class="footer">Follow our Twitter: <a href="https://twitter.com/RocketChatCloud">@RocketChatCloud</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

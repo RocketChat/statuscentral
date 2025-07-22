@@ -10,7 +10,23 @@ import (
 	bolt "github.com/etcd-io/bbolt"
 )
 
-func (s *boltStore) GetIncidents(latestOnly bool) ([]*models.Incident, error) {
+// GetIncidents retrieves a paginated list of incidents.
+// Incidents are returned from newest to oldest.
+func (s *boltStore) GetIncidents(latestOnly bool, pagination models.Pagination) ([]*models.Incident, error) {
+	// Provide sane defaults for pagination to prevent errors or fetching unlimited data.
+	// Assuming models.Pagination has Limit and Offset fields.
+	if pagination.Limit <= 0 {
+		pagination.Limit = 25 // Default page size
+	}
+
+	if pagination.Offset < 0 {
+		pagination.Offset = 0
+	}
+
+	if pagination.Limit > 50 {
+		pagination.Limit = 50
+	}
+
 	tx, err := s.Begin(false)
 	if err != nil {
 		return nil, err
@@ -19,26 +35,46 @@ func (s *boltStore) GetIncidents(latestOnly bool) ([]*models.Incident, error) {
 
 	cursor := tx.Bucket(incidentBucket).Cursor()
 
-	days := config.Config.Website.DaysToAggregate
-	to := time.Now()
-	from := to.Add(time.Duration(-days*24) * time.Hour).Truncate(24 * time.Hour)
+	// Define the time range for the `latestOnly` filter.
+	var from, to time.Time
+	if latestOnly {
+		days := config.Config.Website.DaysToAggregate
+		to = time.Now()
+		from = to.Add(time.Duration(-days*24) * time.Hour).Truncate(24 * time.Hour)
+	}
 
-	incidents := make([]*models.Incident, 0)
-	for k, data := cursor.First(); k != nil; k, data = cursor.Next() {
+	// Pre-allocate the slice with the required capacity.
+	incidents := make([]*models.Incident, 0, pagination.Limit)
+	skippedCount := 0
+
+	// Iterate from the last (newest) key to the first (oldest).
+	// This is more efficient and user-friendly for pagination than loading all records.
+	for k, data := cursor.Last(); k != nil; k, data = cursor.Prev() {
 		var i models.Incident
 		if err := json.Unmarshal(data, &i); err != nil {
+			// Depending on requirements, you might want to log this error and continue
+			// instead of failing the entire request.
 			return nil, err
 		}
 
+		// If latestOnly is true, apply the time filter.
 		if latestOnly {
-			if i.Time.Before(to) && i.Time.After(from) {
-				incidents = append(incidents, &i)
-				continue
+			if i.Time.Before(from) || i.Time.After(to) {
+				continue // Skip incidents that are outside the desired time range.
 			}
-		} else {
-			incidents = append(incidents, &i)
 		}
 
+		// This section handles the pagination offset. We skip the number of incidents
+		// specified by the offset before we start collecting them for the current page.
+		if skippedCount < pagination.Offset {
+			skippedCount++
+			continue
+		}
+
+		// Only add incidents to the slice if we haven't reached the page limit yet.
+		if len(incidents) < pagination.Limit {
+			incidents = append(incidents, &i)
+		}
 	}
 
 	return incidents, nil

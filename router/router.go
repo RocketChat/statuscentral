@@ -26,6 +26,8 @@ func Start(port int) error {
 	router.GET("/scheduled-maintenance/:id", v1c.ScheduledMaintenanceDetailHandler)
 	router.GET("/m/:id", v1c.ScheduledMaintenanceShortRedirectHandler)
 
+	router.GET("/incidents", v1c.IncidentHistoryHandler)
+
 	v1 := router.Group("/api").Group("/v1")
 
 	v1.GET("/services", v1c.ServicesGetAll)

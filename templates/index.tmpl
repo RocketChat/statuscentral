@@ -88,6 +88,10 @@
                         {{ end }}
                     {{ end }}
 
+                    <div class="line history-link">
+                        <a href="/incidents">← Incident History</a>
+                    </div>
+
                 </div>
 
                 <div class="services">
@@ -147,7 +151,7 @@
                                                     {{ $info }}
                                                 {{ else if eq $region.Status "Unknown" }}
                                                     {{ $unknown }}
-                                                {{ end }} 
+                                                {{ end }}
                                             "></span>
                                             </p>
                                             </div>
@@ -165,36 +169,40 @@
                         <h2>Scheduled Maintenance</h2>
                     </div>
 
-                    {{ range $index, $aggregatedScheduledMaintenance := .scheduledMaintenance }}
-                        {{ $length := len $aggregatedScheduledMaintenance.ScheduledMaintenance }}
-                        {{ if ne $length 0 }}
-                            <div class="line">
-                                <div class="flex row">
-                                    <span class="date">{{ $aggregatedScheduledMaintenance.Time.Format "Jan 02" }}</span>
-                                    <div class="line">
-                                        {{ range $scheduledMaintenance := $aggregatedScheduledMaintenance.ScheduledMaintenance }}
-                                            <div class="content">
-                                                <h3><a href="/scheduled-maintenance/{{ $scheduledMaintenance.ID }}">{{ $scheduledMaintenance.Title }}</a></h3>
+                    {{ if ne .scheduledMaintenance.Count 0 }}
+                        {{ range $index, $aggregatedScheduledMaintenance := .scheduledMaintenance }}
+                            {{ $length := len $aggregatedScheduledMaintenance.ScheduledMaintenance }}
+                            {{ if ne $length 0 }}
+                                <div class="line">
+                                    <div class="flex row">
+                                        <span class="date">{{ $aggregatedScheduledMaintenance.Time.Format "Jan 02" }}</span>
+                                        <div class="line">
+                                            {{ range $scheduledMaintenance := $aggregatedScheduledMaintenance.ScheduledMaintenance }}
+                                                <div class="content">
+                                                    <h3><a href="/scheduled-maintenance/{{ $scheduledMaintenance.ID }}">{{ $scheduledMaintenance.Title }}</a></h3>
 
-                                                <p><b>Description:</b> {{ $scheduledMaintenance.Description }}</p>
-                                                <p><b>Services:</b> {{ range $service := $scheduledMaintenance.Services }}{{ $service.Name }}{{ end }}</p>
-                                                <p><b>Planned Time:</b> {{ $scheduledMaintenance.PlannedStart.Format "2006/01/02 15:04"}} - {{ $scheduledMaintenance.PlannedEnd.Format "2006/01/02 15:04"}}</p>
+                                                    <p><b>Description:</b> {{ $scheduledMaintenance.Description }}</p>
+                                                    <p><b>Services:</b> {{ range $service := $scheduledMaintenance.Services }}{{ $service.Name }}{{ end }}</p>
+                                                    <p><b>Planned Time:</b> {{ $scheduledMaintenance.PlannedStart.Format "2006/01/02 15:04"}} - {{ $scheduledMaintenance.PlannedEnd.Format "2006/01/02 15:04"}}</p>
 
-                                                <hr />
+                                                    <hr />
 
-                                                {{ range $update := $scheduledMaintenance.Updates }}
-                                                    {{ if eq ($update.Time.Day) ($scheduledMaintenance.CreatedAt.Day) }}
-                                                        <p><b>{{ $update.Time.Format "15:04"}} {{ $update.Status }}</b> - {{$update.Message}}</p>
-                                                    {{ else }}
-                                                        <p><b>{{ $update.Time.Format "Jan 02 15:04"}} {{ $update.Status }}</b> - {{$update.Message}}</p>
+                                                    {{ range $update := $scheduledMaintenance.Updates }}
+                                                        {{ if eq ($update.Time.Day) ($scheduledMaintenance.CreatedAt.Day) }}
+                                                            <p><b>{{ $update.Time.Format "15:04"}} {{ $update.Status }}</b> - {{$update.Message}}</p>
+                                                        {{ else }}
+                                                            <p><b>{{ $update.Time.Format "Jan 02 15:04"}} {{ $update.Status }}</b> - {{$update.Message}}</p>
+                                                        {{ end }}
                                                     {{ end }}
-                                                {{ end }}
-                                            </div>
-                                        {{ end }}
+                                                </div>
+                                            {{ end }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            {{ end }}
                         {{ end }}
+                    {{ else }}
+                        <div class="line empty">No upcoming maintenance currently scheduled</div>
                     {{ end }}
 
                 </div>

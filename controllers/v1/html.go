@@ -23,7 +23,7 @@ func IndexHandler(c *gin.Context) {
 		return
 	}
 
-	incidents, err := core.GetIncidents(true)
+	incidents, err := core.GetIncidents(true, models.Pagination{Limit: 30})
 	if err != nil {
 		log.Println("Error while getting the incidents:")
 		log.Println(err)
@@ -62,7 +62,7 @@ func IndexHandler(c *gin.Context) {
 		"logo":                 "static/img/logo.svg",
 		"services":             services,
 		"mostCriticalStatus":   core.MostCriticalServiceStatus(services, regions),
-		"incidents":            core.AggregateIncidents(incidents),
+		"incidents":            core.AggregateIncidents(incidents, true),
 		"scheduledMaintenance": core.AggregateScheduledMaintenance(scheduledMaintenance),
 	})
 }
@@ -105,7 +105,7 @@ func handleIndexPageLoadingFromConfig(c *gin.Context) {
 		"logo":                 "static/img/logo.svg",
 		"services":             services,
 		"mostCriticalStatus":   models.ServiceStatusValues["Unknown"],
-		"incidents":            core.AggregateIncidents(make([]*models.Incident, 0)),
+		"incidents":            core.AggregateIncidents(make([]*models.Incident, 0), true),
 		"scheduledMaintenance": core.AggregateScheduledMaintenance(make([]*models.ScheduledMaintenance, 0)),
 	})
 }
@@ -244,4 +244,85 @@ func ScheduledMaintenanceDetailHandler(c *gin.Context) {
 		"services":             services,
 		"scheduledMaintenance": scheduledMainenance,
 	})
+}
+
+// IncidentHistoryHandler is the html controller for sending the html dashboard
+func IncidentHistoryHandler(c *gin.Context) {
+	pagination := getPaginationFromQuery(c)
+
+	services, err := core.GetServicesEnabled()
+	if err != nil {
+		log.Println("Error while getting the services:")
+		log.Println(err)
+		handleIndexPageLoadingFromConfig(c)
+		return
+	}
+
+	incidents, err := core.GetIncidents(false, pagination)
+	if err != nil {
+		log.Println("Error while getting the incidents:")
+		log.Println(err)
+		handleIndexPageLoadingFromConfig(c)
+		return
+	}
+
+	regions, err := core.GetRegions()
+	if err != nil {
+		log.Println("Error while getting the regions:")
+		log.Println(err)
+		handleIndexPageLoadingFromConfig(c)
+		return
+	}
+
+	for _, service := range services {
+		for _, region := range regions {
+			if region.ServiceID == service.ID {
+				service.Regions = append(service.Regions, *region)
+			}
+		}
+	}
+
+	c.HTML(http.StatusOK, "incidentHistory.tmpl", gin.H{
+		"owner":              config.Config.Website.Title,
+		"backgroundColor":    config.Config.Website.HeaderBgColor,
+		"cacheBreaker":       config.Config.Website.CacheBreaker,
+		"logo":               "static/img/logo.svg",
+		"services":           services,
+		"mostCriticalStatus": core.MostCriticalServiceStatus(services, regions),
+		"incidents":          core.AggregateIncidents(incidents, false),
+		"page":               pagination.Page,
+		"previousPage":       pagination.Page - 1,
+		"nextPage":           pagination.Page + 1,
+	})
+}
+
+func getPaginationFromQuery(c *gin.Context) models.Pagination {
+	limitStr := c.Query("limit")
+	offsetStr := c.Query("offset")
+	pageStr := c.Query("page")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		limit = 25
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		offset = 0
+	}
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 0
+	}
+
+	if page > 0 {
+		offset = page * limit
+	}
+
+	return models.Pagination{
+		Limit:  limit,
+		Offset: offset,
+		Page:   page,
+	}
 }

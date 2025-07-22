@@ -6,7 +6,7 @@ import (
 	"github.com/RocketChat/statuscentral/models"
 )
 
-//Store is an interface that the storage implementers should implement
+// Store is an interface that the storage implementers should implement
 type Store interface {
 	// Services
 	CreateService(service *models.Service) error
@@ -26,7 +26,7 @@ type Store interface {
 	// Incidents
 	CreateIncident(incident *models.Incident) error
 	UpdateIncident(incident *models.Incident) error
-	GetIncidents(latest bool) ([]*models.Incident, error)
+	GetIncidents(latest bool, pagination models.Pagination) ([]*models.Incident, error)
 	GetIncidentByID(id int) (*models.Incident, error)
 	DeleteIncident(id int) error
 

@@ -26,7 +26,7 @@ func IncidentsGetAll(c *gin.Context) {
 		latest = false
 	}
 
-	incidents, err := core.GetIncidents(latest)
+	incidents, err := core.GetIncidents(latest, models.Pagination{})
 	if err != nil {
 		internalErrorHandler(c, err)
 		return
