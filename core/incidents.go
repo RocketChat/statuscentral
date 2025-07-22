@@ -323,7 +323,7 @@ func AggregateIncidents(incidents []*models.Incident, showEmptyDays bool) models
 		filteredIncidents := []*models.Incident{}
 
 		for _, incident := range incidents {
-			if incident.Time.Day() == t.Day() {
+			if incident.Time.Year() == t.Year() && incident.Time.Month() == t.Month() && incident.Time.Day() == t.Day() {
 				filteredIncidents = append(filteredIncidents, incident)
 			}
 		}
