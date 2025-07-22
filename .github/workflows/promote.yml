@@ -1,0 +1,71 @@
+name: Promote Release to ArgoCD Repo
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - develop
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: statuscentral
+      REPO_NAME: statuscentral
+      FILE_TO_UPDATE: kubernetes/meta/statuscentral/statuscentral.yaml
+
+    steps:
+      - name: Checkout cloud ops
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.INTERNAL_REPO }}
+          token: ${{ secrets.CI_CLOUD_OPS_PERSONAL_ACCESS_TOKEN }}
+          path: cloud-ops
+
+      - name: Update image/tag/version
+        run: |
+          cd cloud-ops
+
+          CURRENT_TAG="$(yq '.images[] | select(.name | split("/")[-1] == "${{ env.IMAGE_NAME }}") | .newTag' "$FILE_TO_UPDATE")"
+          if [ -z "$CURRENT_TAG" ]; then
+            echo "Error: Unable to find current tag in kustomize format. Lets try a k8s yaml"
+            CURRENT_TAG="$(yq '.spec.template.spec.containers[] | select(.name == "${{ env.IMAGE_NAME }}") | .image' "$FILE_TO_UPDATE" | cut -d':' -f2 | cut -d '"' -f1)"
+          fi
+          sed -i "s|$CURRENT_TAG|$GITHUB_SHA|g" "$FILE_TO_UPDATE"
+
+          echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
+          echo "NEW_TAG=$GITHUB_SHA" >> $GITHUB_ENV
+
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          path: source-repo
+          fetch-depth: 0  # Needed for full commit history
+
+      - name: Get commits between CURRENT_TAG and NEW_TAG
+        id: commits
+        run: |
+          cd source-repo
+          echo "Fetching commits between $CURRENT_TAG and $GITHUB_SHA"
+          COMMIT_LIST=$(git log --pretty=format:"- [%h](https://github.com/${{ env.REPO_NAME }}/commit/%H) %s (by %an)" $CURRENT_TAG..$GITHUB_SHA || echo "Unable to list commits.")
+          echo "COMMIT_LIST<<EOF" >> $GITHUB_ENV
+          echo "$COMMIT_LIST" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Open Pull Request
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        with:
+          token: ${{ secrets.CI_CLOUD_OPS_PERSONAL_ACCESS_TOKEN }}
+          path: cloud-ops
+          commit-message: "Update ${{ env.IMAGE_NAME }} to ${{ env.NEW_TAG }}"
+          title: "Update ${{ env.IMAGE_NAME }} to ${{ env.NEW_TAG }}"
+          body: |
+            Auto-generated PR to promote `${{ env.IMAGE_NAME }}` to `${{ env.NEW_TAG }}`
+            [Compare changes](https://github.com/RocketChat/${{ env.REPO_NAME }}/compare/${{ env.CURRENT_TAG }}...${{ env.NEW_TAG }})
+
+            **Commits included:**
+            ${{ env.COMMIT_LIST }}
+          branch: promote-${{ env.IMAGE_NAME }}
+          base: master
