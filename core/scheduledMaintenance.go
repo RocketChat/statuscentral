@@ -315,9 +315,9 @@ func AggregateScheduledMaintenance(scheduledMaintenance []*models.ScheduledMaint
 
 		filteredScheduledMaintenance := []*models.ScheduledMaintenance{}
 
-		for _, scheduledMainenance := range scheduledMaintenance {
-			if scheduledMainenance.PlannedStart.Day() == t.Day() {
-				filteredScheduledMaintenance = append(filteredScheduledMaintenance, scheduledMainenance)
+		for _, maintenance := range scheduledMaintenance {
+			if maintenance.PlannedStart.Year() == t.Year() && maintenance.PlannedStart.Month() == t.Month() && maintenance.PlannedStart.Day() == t.Day() {
+				filteredScheduledMaintenance = append(filteredScheduledMaintenance, maintenance)
 				count++
 			}
 		}
