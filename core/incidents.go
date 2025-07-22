@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -314,28 +315,49 @@ func ensureIncidentDefaults(incident *models.Incident) {
 	}
 }
 
-// AggregateIncidents aggregates the incidents
+// truncateToDay is a helper function that normalizes a time.Time object
+// to the beginning of its calendar day (00:00:00).
+func truncateToDay(t time.Time) time.Time {
+	// Preserves the location (timezone) of the original time.
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
 func AggregateIncidents(incidents []*models.Incident, showEmptyDays bool) models.AggregatedIncidents {
-	aggregatedIncidents := models.AggregatedIncidents{}
+	incidentsByDay := make(map[time.Time][]*models.Incident)
 
-	for i := 0; i < config.Config.Website.DaysToAggregate; i++ {
-		t := time.Now().Add(-time.Duration(i) * 24 * time.Hour)
-		filteredIncidents := []*models.Incident{}
-
-		for _, incident := range incidents {
-			if incident.Time.Year() == t.Year() && incident.Time.Month() == t.Month() && incident.Time.Day() == t.Day() {
-				filteredIncidents = append(filteredIncidents, incident)
-			}
+	// If showing empty days, "prime" the map with empty slices for recent days.
+	if showEmptyDays {
+		now := time.Now()
+		for i := 0; i < config.Config.Website.EmptyDaysToShow; i++ {
+			day := truncateToDay(now.AddDate(0, 0, -i))
+			incidentsByDay[day] = []*models.Incident{}
 		}
+	}
 
-		// On some cases like the history page we don't want to show if no incident that day
-		if !showEmptyDays && len(filteredIncidents) == 0 {
-			continue
-		}
+	// Group the actual incidents. This will append to existing empty slices for recent days
+	// or create new map entries for older days that have incidents.
+	for _, incident := range incidents {
+		day := truncateToDay(incident.Time)
+		incidentsByDay[day] = append(incidentsByDay[day], incident)
+	}
 
+	// Extract all unique days from the map keys into a slice for sorting.
+	sortedDays := make([]time.Time, 0, len(incidentsByDay))
+	for day := range incidentsByDay {
+		sortedDays = append(sortedDays, day)
+	}
+
+	// Sort the days in reverse chronological order (newest first).
+	sort.Slice(sortedDays, func(i, j int) bool {
+		return sortedDays[i].After(sortedDays[j])
+	})
+
+	// Build the final aggregated list from the sorted days.
+	aggregatedIncidents := make(models.AggregatedIncidents, 0, len(sortedDays))
+	for _, day := range sortedDays {
 		aggregatedIncidents = append(aggregatedIncidents, models.AggregatedIncident{
-			Time:      t,
-			Incidents: filteredIncidents,
+			Time:      day,
+			Incidents: incidentsByDay[day],
 		})
 	}
 

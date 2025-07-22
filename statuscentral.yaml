@@ -4,7 +4,7 @@ website:
   title: Rocket.Chat
   headerBgColor: "#2e343e"
   cacheBreaker: v1
-  daysToAggregate: 14
+  emptyDaysToShow: 14
 services:
   - name: Marketplace
     description: The Rocket.Chat Marketplace API server.

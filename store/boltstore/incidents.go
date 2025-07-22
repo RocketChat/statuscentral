@@ -38,7 +38,7 @@ func (s *boltStore) GetIncidents(latestOnly bool, pagination models.Pagination) 
 	// Define the time range for the `latestOnly` filter.
 	var from, to time.Time
 	if latestOnly {
-		days := config.Config.Website.DaysToAggregate
+		days := config.Config.Website.EmptyDaysToShow
 		to = time.Now()
 		from = to.Add(time.Duration(-days*24) * time.Hour).Truncate(24 * time.Hour)
 	}
