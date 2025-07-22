@@ -15,8 +15,8 @@ import (
 )
 
 // GetIncidents retrieves the incidents from the storage layer
-func GetIncidents(latest bool) ([]*models.Incident, error) {
-	return _dataStore.GetIncidents(latest)
+func GetIncidents(latest bool, pagination models.Pagination) ([]*models.Incident, error) {
+	return _dataStore.GetIncidents(latest, pagination)
 }
 
 // GetIncidentByID retrieves the incident by id, both incident and error will be nil if none found
@@ -24,7 +24,7 @@ func GetIncidentByID(id int) (*models.Incident, error) {
 	return _dataStore.GetIncidentByID(id)
 }
 
-//SendIncidentTwitter sends the incident info to the offical Rocket.Chat Cloud twitter account.
+// SendIncidentTwitter sends the incident info to the offical Rocket.Chat Cloud twitter account.
 func SendIncidentTwitter(incident *models.Incident) (int64, error) {
 	conf := oauth1.NewConfig(config.Config.Twitter.ConsumerKey, config.Config.Twitter.ConsumerSecret)
 	token := oauth1.NewToken(config.Config.Twitter.AccessToken, config.Config.Twitter.AccessSecret)
@@ -50,7 +50,7 @@ func SendIncidentTwitter(incident *models.Incident) (int64, error) {
 	return tweet.ID, nil
 }
 
-//SendIncidentUpdateTwitter sends the incident update info to the offical Rocket.Chat Cloud twitter account.
+// SendIncidentUpdateTwitter sends the incident update info to the offical Rocket.Chat Cloud twitter account.
 func SendIncidentUpdateTwitter(incident *models.Incident, update *models.StatusUpdate) (int64, error) {
 	conf := oauth1.NewConfig(config.Config.Twitter.ConsumerKey, config.Config.Twitter.ConsumerSecret)
 	token := oauth1.NewToken(config.Config.Twitter.AccessToken, config.Config.Twitter.AccessSecret)
@@ -315,7 +315,7 @@ func ensureIncidentDefaults(incident *models.Incident) {
 }
 
 // AggregateIncidents aggregates the incidents
-func AggregateIncidents(incidents []*models.Incident) models.AggregatedIncidents {
+func AggregateIncidents(incidents []*models.Incident, showEmptyDays bool) models.AggregatedIncidents {
 	aggregatedIncidents := models.AggregatedIncidents{}
 
 	for i := 0; i < config.Config.Website.DaysToAggregate; i++ {
@@ -326,6 +326,11 @@ func AggregateIncidents(incidents []*models.Incident) models.AggregatedIncidents
 			if incident.Time.Day() == t.Day() {
 				filteredIncidents = append(filteredIncidents, incident)
 			}
+		}
+
+		// On some cases like the history page we don't want to show if no incident that day
+		if !showEmptyDays && len(filteredIncidents) == 0 {
+			continue
 		}
 
 		aggregatedIncidents = append(aggregatedIncidents, models.AggregatedIncident{

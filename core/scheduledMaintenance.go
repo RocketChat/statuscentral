@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"errors"
-	"log"
 	"strings"
 	"text/template"
 	"time"
@@ -306,27 +305,30 @@ func ensureScheduledMaintenanceDefaults(scheduledMaintenance *models.ScheduledMa
 }
 
 // AggregateScheduledMaintenance aggregates the ScheduledMaintenance
-func AggregateScheduledMaintenance(schedueldMaintenance []*models.ScheduledMaintenance) models.AggregatedScheduledMaintenances {
+func AggregateScheduledMaintenance(scheduledMaintenance []*models.ScheduledMaintenance) models.AggregatedScheduledMaintenances {
 	aggregatedScheduledMaintenances := models.AggregatedScheduledMaintenances{}
+
+	count := 0
 
 	for i := 0; i < config.Config.Website.DaysToAggregate; i++ {
 		t := time.Now().Add(time.Duration(i) * 24 * time.Hour)
 
-		log.Println(t)
-
 		filteredScheduledMaintenance := []*models.ScheduledMaintenance{}
 
-		for _, scheduledMainenance := range schedueldMaintenance {
+		for _, scheduledMainenance := range scheduledMaintenance {
 			if scheduledMainenance.PlannedStart.Day() == t.Day() {
 				filteredScheduledMaintenance = append(filteredScheduledMaintenance, scheduledMainenance)
+				count++
 			}
 		}
 
-		aggregatedScheduledMaintenances = append(aggregatedScheduledMaintenances, models.AggregatedScheduledMaintenance{
+		aggregatedScheduledMaintenances.Days = append(aggregatedScheduledMaintenances.Days, models.ScheduledMaintenanceAggregatedByDay{
 			Time:                 t,
 			ScheduledMaintenance: filteredScheduledMaintenance,
 		})
 	}
+
+	aggregatedScheduledMaintenances.Count = count
 
 	return aggregatedScheduledMaintenances
 }

@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-  "io"
+	"io"
 	"log"
 	"time"
 
@@ -38,7 +38,7 @@ func TwistItUp() error {
 func RunMigrations() error {
 	log.Println("Run migrations")
 	// Migrate incidents over to scheduled maintenances
-	incidents, err := _dataStore.GetIncidents(false)
+	incidents, err := _dataStore.GetIncidents(false, models.Pagination{})
 	if err != nil {
 		return err
 	}
