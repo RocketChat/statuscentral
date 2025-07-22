@@ -19,7 +19,7 @@ func (s *boltStore) GetScheduledMaintenance(latestOnly bool) ([]*models.Schedule
 
 	cursor := tx.Bucket(scheduledMaintenanceBucket).Cursor()
 
-	days := config.Config.Website.DaysToAggregate
+	days := config.Config.Website.EmptyDaysToShow
 	to := time.Now()
 	from := to.Add(time.Duration(-days*24) * time.Hour).Truncate(24 * time.Hour)
 

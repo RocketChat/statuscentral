@@ -11,7 +11,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-//Config contains a reference to the configuration
+// Config contains a reference to the configuration
 var Config *config
 
 type config struct {
@@ -32,7 +32,7 @@ type websiteConfig struct {
 	HeaderBgColor   string `yaml:"headerBgColor" json:"headerBgColor"`
 	Title           string `yaml:"title" json:"title"`
 	CacheBreaker    string `yaml:"cacheBreaker" json:"cacheBreaker"`
-	DaysToAggregate int    `yaml:"daysToAggregate" json:"daysToAggregate"`
+	EmptyDaysToShow int    `yaml:"emptyDaysToShow" json:"emptyDaysToShow"`
 }
 
 type serviceConfig struct {
@@ -86,7 +86,7 @@ func (c *config) HttpHandler(gc *gin.Context) {
 	gc.JSON(200, Config)
 }
 
-//Load tries to load the configuration file
+// Load tries to load the configuration file
 func Load(filePath string) error {
 	Config = new(config)
 

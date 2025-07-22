@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"errors"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -304,31 +305,39 @@ func ensureScheduledMaintenanceDefaults(scheduledMaintenance *models.ScheduledMa
 	}
 }
 
-// AggregateScheduledMaintenance aggregates the ScheduledMaintenance
+// AggregateScheduledMaintenance aggregates scheduled maintenance events by day.
+// It only includes days that have at least one maintenance event.
 func AggregateScheduledMaintenance(scheduledMaintenance []*models.ScheduledMaintenance) models.AggregatedScheduledMaintenances {
-	aggregatedScheduledMaintenances := models.AggregatedScheduledMaintenances{}
-
-	count := 0
-
-	for i := 0; i < config.Config.Website.DaysToAggregate; i++ {
-		t := time.Now().Add(time.Duration(i) * 24 * time.Hour)
-
-		filteredScheduledMaintenance := []*models.ScheduledMaintenance{}
-
-		for _, maintenance := range scheduledMaintenance {
-			if maintenance.PlannedStart.Year() == t.Year() && maintenance.PlannedStart.Month() == t.Month() && maintenance.PlannedStart.Day() == t.Day() {
-				filteredScheduledMaintenance = append(filteredScheduledMaintenance, maintenance)
-				count++
-			}
-		}
-
-		aggregatedScheduledMaintenances.Days = append(aggregatedScheduledMaintenances.Days, models.ScheduledMaintenanceAggregatedByDay{
-			Time:                 t,
-			ScheduledMaintenance: filteredScheduledMaintenance,
-		})
+	// Use a map to group maintenance events by day efficiently.
+	maintenanceByDay := make(map[time.Time][]*models.ScheduledMaintenance)
+	for _, maintenance := range scheduledMaintenance {
+		day := truncateToDay(maintenance.PlannedStart)
+		maintenanceByDay[day] = append(maintenanceByDay[day], maintenance)
 	}
 
-	aggregatedScheduledMaintenances.Count = count
+	// Extract all unique days from the map keys into a slice for sorting.
+	sortedDays := make([]time.Time, 0, len(maintenanceByDay))
+	for day := range maintenanceByDay {
+		sortedDays = append(sortedDays, day)
+	}
+
+	// Sort the days in reverse chronological order (newest first).
+	sort.Slice(sortedDays, func(i, j int) bool {
+		return sortedDays[i].After(sortedDays[j])
+	})
+
+	aggregatedScheduledMaintenances := models.AggregatedScheduledMaintenances{
+		Days:  make([]models.ScheduledMaintenanceAggregatedByDay, 0, len(sortedDays)),
+		Count: len(scheduledMaintenance),
+	}
+
+	// Build the final aggregated list from the sorted days.
+	for _, day := range sortedDays {
+		aggregatedScheduledMaintenances.Days = append(aggregatedScheduledMaintenances.Days, models.ScheduledMaintenanceAggregatedByDay{
+			Time:                 day,
+			ScheduledMaintenance: maintenanceByDay[day],
+		})
+	}
 
 	return aggregatedScheduledMaintenances
 }
