@@ -170,7 +170,7 @@
                     </div>
 
                     {{ if ne .scheduledMaintenance.Count 0 }}
-                        {{ range $index, $aggregatedScheduledMaintenance := .scheduledMaintenance }}
+                        {{ range $index, $aggregatedScheduledMaintenance := .scheduledMaintenance.Days }}
                             {{ $length := len $aggregatedScheduledMaintenance.ScheduledMaintenance }}
                             {{ if ne $length 0 }}
                                 <div class="line">
