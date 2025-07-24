@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/caarlos0/env"
 	"github.com/gin-gonic/gin"
 
 	yaml "gopkg.in/yaml.v2"
@@ -17,7 +18,7 @@ var Config *config
 type config struct {
 	HTTP      httpConfig      `yaml:"http" json:"http"`
 	DataPath  string          `yaml:"dataPath" json:"dataPath"`
-	AuthToken string          `yaml:"authToken" json:"-"`
+	AuthToken string          `yaml:"authToken" json:"-" env:"AUTH_TOKEN"`
 	Website   websiteConfig   `yaml:"website" json:"website"`
 	Services  []serviceConfig `yaml:"services" json:"services"`
 	Regions   []regionConfig  `yaml:"regions" json:"regions"`
@@ -50,9 +51,9 @@ type regionConfig struct {
 type twitterConfig struct {
 	Enabled        bool   `yaml:"enabled" json:"enabled"`
 	ConsumerKey    string `yaml:"consumerKey" json:"consumerKey"`
-	ConsumerSecret string `yaml:"consumerSecret" json:"consumerSecret"`
-	AccessToken    string `yaml:"accessToken" json:"accessToken"`
-	AccessSecret   string `yaml:"accessSecret" json:"accessSecret"`
+	ConsumerSecret string `yaml:"consumerSecret" json:"consumerSecret" env:"TWITTER_CONSUMER_SECRET"`
+	AccessToken    string `yaml:"accessToken" json:"accessToken" env:"TWITTER_ACCESS_TOKEN"`
+	AccessSecret   string `yaml:"accessSecret" json:"accessSecret" env:"TWITTER_ACCESS_SECRET"`
 }
 
 func (c *config) Load(filePath string) error {
