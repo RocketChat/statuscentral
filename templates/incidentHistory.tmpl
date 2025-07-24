@@ -6,7 +6,7 @@
     <title>Incident History &bullet; {{ .owner }}</title>
     <link rel="icon" type="image/png" href="static/img/favicon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Inter" rel="stylesheet">
     <link rel="stylesheet" href="static/css/app.css?v={{ .cacheBreaker }}" />
     <link rel="stylesheet" href="static/css/font-awesome.min.css">
 
@@ -22,7 +22,7 @@
     <div class="page">
         <div class="spacer">
             <div class="flex row">
-                <img class="logo" src="{{ .logo }}" />
+                <a href="/"><img class="logo" src="{{ .logo }}" /></a>
             </div>
 
             <div class="info-header">
@@ -53,7 +53,7 @@
                 {{ end }}
             </div>
 
-            <div class="main-content">
+            <div class="main flex row wrap">
                 <div class="incidents">
                     <div class="line">
                         <h2>Incident History</h2>
