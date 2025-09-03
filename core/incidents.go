@@ -165,6 +165,11 @@ func DeleteIncident(id int) error {
 	return _dataStore.DeleteIncident(id)
 }
 
+// UpdateIncident updates an incident in the storage layer
+func UpdateIncident(incident *models.Incident) error {
+	return _dataStore.UpdateIncident(incident)
+}
+
 // CreateIncidentUpdate creates an update for an incident
 func CreateIncidentUpdate(incidentID int, update *models.StatusUpdate) (*models.Incident, error) {
 	if incidentID <= 0 {
