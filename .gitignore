@@ -1,6 +1,7 @@
 statuscentral
 statusctl
 statuscentral.yaml
+statuscentral.bbolt
 db/
 vendor/
 databasefiles/
