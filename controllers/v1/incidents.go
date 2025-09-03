@@ -32,7 +32,15 @@ func IncidentsGetAll(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, incidents)
+	// Filter out labels for unauthenticated public access
+	filteredIncidents := make([]*models.Incident, len(incidents))
+	for i, incident := range incidents {
+		filteredIncident := *incident // Create a copy
+		filteredIncident.Labels = nil // Remove labels
+		filteredIncidents[i] = &filteredIncident
+	}
+
+	c.JSON(http.StatusOK, filteredIncidents)
 }
 
 // IncidentGetOne gets one incident by the provided id

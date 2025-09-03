@@ -31,6 +31,14 @@ func IndexHandler(c *gin.Context) {
 		return
 	}
 
+	// Filter out labels for public HTML access
+	filteredIncidents := make([]*models.Incident, len(incidents))
+	for i, incident := range incidents {
+		filteredIncident := *incident // Create a copy
+		filteredIncident.Labels = nil // Remove labels
+		filteredIncidents[i] = &filteredIncident
+	}
+
 	scheduledMaintenance, err := core.GetScheduledMaintenance(true)
 	if err != nil {
 		log.Println("Error while getting the scheduled maintenance:")
@@ -62,7 +70,7 @@ func IndexHandler(c *gin.Context) {
 		"logo":                 "static/img/logo.svg",
 		"services":             services,
 		"mostCriticalStatus":   core.MostCriticalServiceStatus(services, regions),
-		"incidents":            core.AggregateIncidents(incidents, true),
+		"incidents":            core.AggregateIncidents(filteredIncidents, true),
 		"scheduledMaintenance": core.AggregateScheduledMaintenance(scheduledMaintenance),
 	})
 }
@@ -167,6 +175,10 @@ func IncidentDetailHandler(c *gin.Context) {
 		return
 	}
 
+	// Filter out labels for public HTML access
+	filteredIncident := *incident // Create a copy
+	filteredIncident.Labels = nil // Remove labels
+
 	c.HTML(http.StatusOK, "incidentDetail.tmpl", gin.H{
 		"owner":              config.Config.Website.Title,
 		"backgroundColor":    config.Config.Website.HeaderBgColor,
@@ -174,7 +186,7 @@ func IncidentDetailHandler(c *gin.Context) {
 		"logo":               "static/img/logo.svg",
 		"mostCriticalStatus": core.MostCriticalServiceStatus(services, regions),
 		"services":           services,
-		"incident":           incident,
+		"incident":           &filteredIncident,
 	})
 }
 
@@ -266,6 +278,14 @@ func IncidentHistoryHandler(c *gin.Context) {
 		return
 	}
 
+	// Filter out labels for public HTML access
+	filteredIncidents := make([]*models.Incident, len(incidents))
+	for i, incident := range incidents {
+		filteredIncident := *incident // Create a copy
+		filteredIncident.Labels = nil // Remove labels
+		filteredIncidents[i] = &filteredIncident
+	}
+
 	regions, err := core.GetRegions()
 	if err != nil {
 		log.Println("Error while getting the regions:")
@@ -289,7 +309,7 @@ func IncidentHistoryHandler(c *gin.Context) {
 		"logo":               "static/img/logo.svg",
 		"services":           services,
 		"mostCriticalStatus": core.MostCriticalServiceStatus(services, regions),
-		"incidents":          core.AggregateIncidents(incidents, false),
+		"incidents":          core.AggregateIncidents(filteredIncidents, false),
 		"page":               pagination.Page,
 		"previousPage":       pagination.Page - 1,
 		"nextPage":           pagination.Page + 1,
