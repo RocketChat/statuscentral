@@ -30,7 +30,16 @@ var IncidentCmd = &cobra.Command{
 func init() {
 	getCmd.Flags().StringVarP(&outputFormat, "output", "o", "list", "output format")
 	listCmd.Flags().BoolVarP(&latestOnly, "latest", "l", false, "Show latest only")
+	
+	// Add flags for create command
+	createCmd.Flags().StringVar(&createTitle, "title", "", "Incident title")
+	createCmd.Flags().StringVar(&createDescription, "description", "", "Incident description")
+	createCmd.Flags().StringVar(&createEnvironment, "environment", "", "Environment label (e.g., dedicated-workspace-1)")
+	createCmd.Flags().StringVar(&createDeployment, "deployment", "", "Deployment label (e.g., open)")
 
-	SubCommands = append(SubCommands, listCmd, describeCmd, getCmd, createCmd, updateCmd)
+	// Add flags for patch command
+	patchCmd.Flags().StringVar(&patchLabels, "labels", "", "Labels to patch in format: key1=value1,key2=value2")
+
+	SubCommands = append(SubCommands, listCmd, describeCmd, getCmd, createCmd, patchCmd, updateCmd)
 	IncidentCmd.AddCommand(SubCommands...)
 }

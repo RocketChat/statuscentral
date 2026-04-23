@@ -10,10 +10,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	createTitle       string
+	createDescription string
+	createEnvironment string
+	createDeployment  string
+)
+
 var createCmd = &cobra.Command{
 	Use:     "create",
 	Short:   "create incident",
-	Example: "statusctl incident create",
+	Example: "statusctl incident create --title \"Database Issue\" --description \"Connectivity issue\" --environment \"dedicated-workspace-1\" --deployment \"open\"",
 	Run: func(c *cobra.Command, args []string) {
 		client := common.GetStatusCentralClient()
 
@@ -22,7 +29,28 @@ var createCmd = &cobra.Command{
 			panic(err)
 		}
 
-		title := common.StringPrompt("Incident Short Descripton / Title:")
+		var title, environment, deployment string
+
+		// Get title either from flag or prompt
+		if createTitle != "" {
+			title = createTitle
+		} else {
+			title = common.StringPrompt("Incident Short Description / Title:")
+		}
+
+		// Get environment either from flag or prompt
+		if createEnvironment != "" {
+			environment = createEnvironment
+		} else {
+			environment = common.StringPromptWithDefault("Environment (e.g., dedicated-workspace-1):", "")
+		}
+
+		// Get deployment either from flag or prompt
+		if createDeployment != "" {
+			deployment = createDeployment
+		} else {
+			deployment = common.StringPromptWithDefault("Deployment (e.g., open):", "")
+		}
 
 		for i, statusOption := range models.IncidentStatusArray {
 			log.Printf("%d) %s\n", i, statusOption)
@@ -42,6 +70,17 @@ var createCmd = &cobra.Command{
 			Title:    title,
 			Status:   models.IncidentStatusArray[status],
 			Services: servicesImpacted,
+		}
+
+		// Add labels if provided
+		if environment != "" || deployment != "" {
+			incident.Labels = make(map[string]string)
+			if environment != "" {
+				incident.Labels["environment"] = environment
+			}
+			if deployment != "" {
+				incident.Labels["deployment"] = deployment
+			}
 		}
 
 		returnedIncident, err := client.Incidents().Create(incident)
