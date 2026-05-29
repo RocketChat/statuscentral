@@ -7,9 +7,13 @@ on:
       - main
       - develop
 
+permissions: {}
+
 jobs:
   promote:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       IMAGE_NAME: statuscentral
       REPO_NAME: statuscentral
