@@ -17,7 +17,9 @@ ID: {{.ID}}
 Title: {{.Title}}
 Created: {{ .Time.Format "Jan 02 2006 15:04" }}
 Status: {{.Status}}
-Services: 
+{{ if .Labels }}Labels:
+{{ range $key, $value := .Labels }}- {{$key}}: {{$value}}
+{{ end }}{{ end }}Services: 
 {{ range $service := .Services }}
 - Name: {{$service.Name}}
   Status: {{$service.Status}}

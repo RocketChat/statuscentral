@@ -17,6 +17,7 @@ type Incident struct {
 	IsMaintenance   bool                `json:"isMaintenance"` // Deprecated
 	OriginalTweetID int64               `json:"originalTweetId"`
 	LatestTweetID   int64               `json:"latestTweetId"`
+	Labels          map[string]string   `json:"labels,omitempty"`
 }
 
 //IncidentMaintenance contains the data about a scheduled maintenance.

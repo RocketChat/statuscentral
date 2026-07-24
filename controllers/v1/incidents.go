@@ -32,7 +32,15 @@ func IncidentsGetAll(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, incidents)
+	// Filter out labels for unauthenticated public access
+	filteredIncidents := make([]*models.Incident, len(incidents))
+	for i, incident := range incidents {
+		filteredIncident := *incident // Create a copy
+		filteredIncident.Labels = nil // Remove labels
+		filteredIncidents[i] = &filteredIncident
+	}
+
+	c.JSON(http.StatusOK, filteredIncidents)
 }
 
 // IncidentGetOne gets one incident by the provided id
@@ -260,6 +268,70 @@ func IncidentUpdateGetOne(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, update)
+}
+
+// IncidentPatch updates an incident, primarily for updating labels
+// @Summary Patches an incident
+// @ID incident-patch
+// @Tags incident
+// @Accept json
+// @Param id path integer true "Incident id"
+// @Param incident body models.Incident true "Incident patch object"
+// @Produce json
+// @Success 200 {object} models.Incident
+// @Router /v1/incidents/{id} [patch]
+func IncidentPatch(c *gin.Context) {
+	idParam := c.Param("id")
+
+	if idParam == "" {
+		badRequestHandlerDetailed(c, errors.New("invalid incident id passed"))
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		badRequestHandlerDetailed(c, err)
+		return
+	}
+
+	// Get the existing incident
+	incident, err := core.GetIncidentByID(id)
+	if err != nil {
+		internalErrorHandlerDetailed(c, err)
+		return
+	}
+
+	if incident == nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	var patchData struct {
+		Labels map[string]string `json:"labels,omitempty"`
+	}
+
+	if err := c.BindJSON(&patchData); err != nil {
+		return
+	}
+
+	// Update labels if provided
+	if patchData.Labels != nil {
+		if incident.Labels == nil {
+			incident.Labels = make(map[string]string)
+		}
+		for key, value := range patchData.Labels {
+			incident.Labels[key] = value
+		}
+	}
+
+	// Update the incident
+	err = core.UpdateIncident(incident)
+	if err != nil {
+		internalErrorHandlerDetailed(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, incident)
 }
 
 // IncidentUpdateDelete deletes an update for an incident
