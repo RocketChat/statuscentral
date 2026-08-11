@@ -13,6 +13,7 @@ type IncidentsInterface interface {
 	GetMultiple(latestOnly bool) (result []*models.Incident, err error)
 	CreateStatusUpdate(incidentID int, statusUpdate *models.StatusUpdate) (returnedIncident *models.Incident, err error)
 	Delete(incidentID int) error
+	Patch(incidentID int, patchData interface{}) (returnedIncident *models.Incident, err error)
 }
 
 type incidents struct {
@@ -135,4 +136,26 @@ func (i *incidents) Delete(incidentID int) error {
 	err = resp.Body.Close()
 
 	return err
+}
+
+// Patch patches an incident
+func (i *incidents) Patch(incidentID int, patchData interface{}) (returnedIncident *models.Incident, err error) {
+	req, err := i.client.buildRequest("PATCH", fmt.Sprintf("/api/v1/incidents/%d", incidentID), patchData)
+	if err != nil {
+		return nil, err
+	}
+
+	returnedIncident = &models.Incident{}
+
+	resp, err := i.client.do(req, returnedIncident)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return returnedIncident, nil
 }

@@ -56,6 +56,7 @@ func Start(port int) error {
 		// Incidents
 		v1.POST("/incidents", v1c.IncidentCreate)
 		v1.GET("/incidents/:id", v1c.IncidentGetOne)
+		v1.PATCH("/incidents/:id", v1c.IncidentPatch)
 		v1.DELETE("/incidents/:id", v1c.IncidentDelete)
 
 		v1.POST("/incidents/:id/updates", v1c.IncidentUpdateCreate)
